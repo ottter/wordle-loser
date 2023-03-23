@@ -23,10 +23,10 @@ def download_wordlist():
 
 def first_word():
     # wordlist = ['adieu', 'media', 'arise', 'radio']
-    first_guess_list = ['spoon']
+    first_guess_list = ['scoon']
     return random.choice(first_guess_list)
 
-def generate_five_letter(wordlist, green_letters):
+def generate_five_letter(wordlist, green_letters, guess_history):
     """Generate all 5 letter words. Might not all be Wordle-approved"""
 
     five_letter_words = [word.lower() for word in wordlist if len(word) == 5]
@@ -34,6 +34,9 @@ def generate_five_letter(wordlist, green_letters):
     # Does not remove words that aren't possible due to close/yellow letters
     for word in five_letter_words.copy():
         for j, letter in enumerate(word):
+                if word in guess_history:
+                    five_letter_words.remove(word)
+                    break
                 if letter != green_letters[j] and green_letters[j] != None:
                     five_letter_words.remove(word)
                     break
@@ -52,15 +55,19 @@ def compare_words(todays_word, wordle_guess):
     result, wrong_letters, close_letters = [], [], []
 
     for i in range(5):
+        print(todays_word[i], wordle_guess[i])
+        # If the letter in todays_word matches the guess, add to result list
         if todays_word[i] == wordle_guess[i]:
             result.append(todays_word[i])
-        elif todays_word[i] in wordle_guess:
-            result.append(None)
-            close_letters.append(todays_word[i])
+        # If the letter is anywhere within the guess, add to the close
+        elif wordle_guess[i] in todays_word:
+            result.append(None)                     # None gets added if there is no exact match to keep position
+            close_letters.append(wordle_guess[i])
+        # If the letter is neither correct or misplaced, add to the discard pile
         else:
             result.append(None)
-            wrong_letters.append(todays_word[i])
-    wrong_letters = [*set(wrong_letters)]
+            wrong_letters.append(wordle_guess[i])
+    wrong_letters = [*set(wrong_letters)]           # Remove repeats from the discard pile
     return result, close_letters, wrong_letters, wordle_guess
 
 def green_letter_check(word, green_letters):
@@ -78,9 +85,9 @@ def yellow_letter_check(word, green_letters, yellow_letters):
         return True
     return False
 
-def next_word(wordlist, green_letters, yellow_letters):
+def next_word(wordlist, green_letters, yellow_letters, guess_history):
     next_guess = None
-    for word in generate_five_letter(wordlist, green_letters):
+    for word in generate_five_letter(wordlist, green_letters, guess_history):
         # Compare current matched letters to generated list of five letter words
         if green_letter_check(word, green_letters):
             if yellow_letter_check(word, green_letters, yellow_letters):
@@ -104,9 +111,10 @@ def play_wordle():
     todays_word = 'snoop'
     wordlist = download_wordlist()
 
-    print(f"\nTodays wordle is:  {todays_word}\n{'='*9}")
+    print(f"\nTodays wordle is:  {todays_word}\nYour guess is:\t   {first_word()}\n{'='*9}")
 
     result, close_letters, wrong_letters, wordle_guess = compare_words(todays_word, first_word())
+    print(close_letters, wrong_letters)
     discard_pile.extend(wrong_letters)      # List of letters that are not in today's Wordle
     close_history.extend(close_letters)     # List of letters in today's Wordle that are out of order
     guess_history.append(wordle_guess)      # List of guess attempt at today's Wordle
@@ -117,10 +125,9 @@ def play_wordle():
     # The word is: SPOON
     # First guess: SPORT 🟩🟩🟩⬜⬜
     # Secnd guess: SPOOF 🟩🟩🟩🟩⬜
-    close_history = []
 
     print(f"""{'='*9}
-The next guess should be:  {next_word(wordlist, result, close_history)}
+The next guess should be:  {next_word(wordlist, result, close_history, guess_history)}
 Current board:  {result}
 Yellow letters: {close_history}
 Discard pile:   {discard_pile}
