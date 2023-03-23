@@ -31,12 +31,16 @@ def generate_five_letter(wordlist, green_letters, yellow_letters, discard_pile, 
     """Generate all 5 letter words. Might not all be Wordle-approved
        Remove words that don't match parameters determined by compare_words()
        """
-
+    banlist = []
     five_letter_words = [word.lower() for word in wordlist if len(word) == 5]
     # Remove words from the list that don't match the correct letter placements
     # Does not remove words that aren't possible due to close/yellow letters
     for word in five_letter_words.copy():
         for j, letter in enumerate(word):
+            # Remove word if it is not a valid Wordle word
+            if word in banlist:
+                five_letter_words.remove(word)
+                break
             # Remove already guessed words from possible list
             if word in guess_history:
                 five_letter_words.remove(word)
@@ -110,7 +114,8 @@ def yellow_letter_check(word, green_letters, yellow_letters):
 def next_word(wordlist, green_letters, yellow_letters, discard_pile, guess_history, method):
     next_guess = None
     wordlist_sorted = []
-    for word in generate_five_letter(wordlist, green_letters, yellow_letters, discard_pile, guess_history):
+    generated_wordlist = generate_five_letter(wordlist, green_letters, yellow_letters, discard_pile, guess_history)
+    for word in generated_wordlist:
         # Compare current matched letters to generated list of five letter words
         if green_letter_check(word, green_letters):
             if yellow_letter_check(word, green_letters, yellow_letters):
@@ -123,7 +128,7 @@ def next_word(wordlist, green_letters, yellow_letters, discard_pile, guess_histo
     if method == 'brown':
         frequency = nltk.FreqDist([w.lower() for w in brown.words()])
         wordlist_sorted = sorted(wordlist_sorted, key=lambda x: frequency[x.lower()], reverse=True)
-    return wordlist_sorted[0]
+    return wordlist_sorted[0], generated_wordlist
     
 def play_wordle(starting_word=first_word(), wordle=todays_wordle().lower(), method='quick', print_output=False):
     discard_pile, guess_history, close_history = [], [], []
@@ -153,7 +158,7 @@ def play_wordle(starting_word=first_word(), wordle=todays_wordle().lower(), meth
             break
         
         # Update the guess word based on previous results and remamining words
-        guess = next_word(wordlist, result, close_history, discard_pile, guess_history, method)
+        guess, wordlist = next_word(wordlist, result, close_history, discard_pile, guess_history, method)
         if print_output:
             print(f"Next guess:   {guess}\n"
                 f"Current board:  {result}\n"
@@ -171,4 +176,4 @@ def play_wordle(starting_word=first_word(), wordle=todays_wordle().lower(), meth
     }
     return wordle_dictionary
 
-play_wordle(method='quick', print_output=True)
+play_wordle(method='brown', print_output=True)
