@@ -54,37 +54,43 @@ def generate_five_letter(wordlist, green_letters, yellow_letters, discard_pile, 
             if i not in word:
                 five_letter_words.remove(word)
                 break
-    for word in five_letter_words:
-        print('✔️  ', word)
-    print(f"Possible words remaining: {len(five_letter_words)}")
+    # for word in five_letter_words:
+    #     print('✔️  ', word)
+    # print(f"Possible words remaining: {len(five_letter_words)}")
     return five_letter_words
 
 def compare_words(todays_word, wordle_guess):
     """Compare a submitted word against the days Wordle"""
+
+    emoji_output = ""
+
+    result, wrong_letters, close_letters = [], [], []
 
     if len(wordle_guess) != 5:
         return print("Error: Your guess word must be 5 letters long")
     
     if wordle_guess == todays_word:
         result = [char for char in todays_word]
-        return result, [], [], [todays_word]
-    
-    result, wrong_letters, close_letters = [], [], []
+        emoji_output = f"🟩🟩🟩🟩🟩"
+        return result, [], [], todays_word, emoji_output
 
     for i in range(5):
         # If the letter in todays_word matches the guess, add to result list
         if todays_word[i] == wordle_guess[i]:
             result.append(todays_word[i])
+            emoji_output = emoji_output + "🟩"
         # If the letter is anywhere within the guess, add to the close
         elif wordle_guess[i] in todays_word:
             result.append(None)                     # None gets added if there is no exact match to keep position
             close_letters.append(wordle_guess[i])
+            emoji_output = emoji_output + "🟨"
         # If the letter is neither correct or misplaced, add to the discard pile
         else:
             result.append(None)
             wrong_letters.append(wordle_guess[i])
+            emoji_output = emoji_output + "⬜"
     wrong_letters = [*set(wrong_letters)]           # Remove repeats from the discard pile
-    return result, close_letters, wrong_letters, wordle_guess
+    return result, close_letters, wrong_letters, wordle_guess, emoji_output
 
 def green_letter_check(word, green_letters):
     for i in range(len(word)):
@@ -119,36 +125,50 @@ def next_word(wordlist, green_letters, yellow_letters, discard_pile, guess_histo
         wordlist_sorted = sorted(wordlist_sorted, key=lambda x: frequency[x.lower()], reverse=True)
     return wordlist_sorted[0]
     
-def play_wordle(starting_word=first_word(), wordle=todays_wordle().lower(), method='quick'):
+def play_wordle(starting_word=first_word(), wordle=todays_wordle().lower(), method='quick', print_output=False):
     discard_pile, guess_history, close_history = [], [], []
 
     todays_word = wordle
-    guess = starting_word
+    guess = starting_word.lower()
     wordlist = download_wordlist()
-    print(f"\nTodays wordle is:  {todays_word}\nYour guess is:\t   {guess}\n")
-
+    emoji_block = ""
 
     for i in range(6):
-        print(f"{'='*9}\n")
-        result, close_letters, wrong_letters, wordle_guess = compare_words(todays_word, guess)
+        # Compare the guess word with the wordle of the day
+        result, close_letters, wrong_letters, wordle_guess, emoji_output = compare_words(todays_word, guess)
         discard_pile.extend(wrong_letters)      # List of letters that are not in today's Wordle
         close_history.extend(close_letters)     # List of letters in today's Wordle that are out of order
         guess_history.append(wordle_guess)      # List of guess attempt at today's Wordle
 
         close_history = [*set(close_history)]   # Remove dupllicates from close_history
 
+        emoji_block = f"{emoji_block}\n{emoji_output}"
+
         if result == [char for char in todays_word]:
-            return print(f'WORDLE: {guess_history[-1][0]}\nIt took {len(guess_history)} guesses')
+            if print_output:
+                print(f"{emoji_block}")
+                print(f'WORDLE: {guess_history[-1]}\n'
+                    f'It took {len(guess_history)} guesses\n'
+                    f'Path: {" > ".join(guess_history)}\n')
+            break
         
+        # Update the guess word based on previous results and remamining words
         guess = next_word(wordlist, result, close_history, discard_pile, guess_history, method)
+        if print_output:
+            print(f"Next guess:   {guess}\n"
+                f"Current board:  {result}\n"
+                f"Yellow letters: {close_history}\n"
+                f"Discard pile:   {discard_pile}\n"
+                f"Guess history:  {guess_history}\n"
+                f"{emoji_block}\n{'='*40}")
 
-        print(f"""{'-'*2}    
-    The next guess will be:  {guess}
-    Current board:  {result}
-    Yellow letters: {close_history}
-    Discard pile:   {discard_pile}
-    Guess history:  {guess_history}""")
+    wordle_dictionary = {
+        "wordle": wordle,
+        "emoji_block": emoji_block,
+        "guess_history": guess_history,
+        "guess_count": len(guess_history),
+        "guess_path": " > ".join(guess_history),
+    }
+    return wordle_dictionary
 
-    return print('\nnice */6, wordle scum') 
-
-play_wordle(wordle='apple', method='brown')
+play_wordle(method='quick', print_output=True)
