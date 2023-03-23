@@ -2,6 +2,7 @@ import requests
 import random
 import nltk
 from config import API_KEY
+from nltk.corpus import brown
 
 
 def todays_wordle():
@@ -19,27 +20,43 @@ def todays_wordle():
 
 def download_wordlist():
     nltk.download('words')
+    nltk.download('brown')
     return nltk.corpus.words.words()
 
 def first_word():
-    # wordlist = ['adieu', 'media', 'arise', 'radio']
-    first_guess_list = ['scoon']
-    return random.choice(first_guess_list)
+    wordlist = ['adieu', 'media', 'arise', 'radio']
+    return random.choice(wordlist)
 
-def generate_five_letter(wordlist, green_letters, guess_history):
-    """Generate all 5 letter words. Might not all be Wordle-approved"""
+def generate_five_letter(wordlist, green_letters, yellow_letters, discard_pile, guess_history):
+    """Generate all 5 letter words. Might not all be Wordle-approved
+       Remove words that don't match parameters determined by compare_words()
+       """
 
     five_letter_words = [word.lower() for word in wordlist if len(word) == 5]
     # Remove words from the list that don't match the correct letter placements
     # Does not remove words that aren't possible due to close/yellow letters
     for word in five_letter_words.copy():
         for j, letter in enumerate(word):
-                if word in guess_history:
-                    five_letter_words.remove(word)
-                    break
-                if letter != green_letters[j] and green_letters[j] != None:
-                    five_letter_words.remove(word)
-                    break
+            # Remove already guessed words from possible list
+            if word in guess_history:
+                five_letter_words.remove(word)
+                break
+            # Remove words with any discarded letters from list
+            if letter in discard_pile:
+                five_letter_words.remove(word)
+                break
+            # Remove words that have incorrect letters in previously solved positions
+            if letter != green_letters[j] and green_letters[j] != None:
+                five_letter_words.remove(word)
+                break
+    for word in five_letter_words.copy():
+        for i in yellow_letters:
+            if i not in word:
+                five_letter_words.remove(word)
+                break
+    for word in five_letter_words:
+        print('✔️  ', word)
+    print(f"Possible words remaining: {len(five_letter_words)}")
     return five_letter_words
 
 def compare_words(todays_word, wordle_guess):
@@ -55,7 +72,6 @@ def compare_words(todays_word, wordle_guess):
     result, wrong_letters, close_letters = [], [], []
 
     for i in range(5):
-        print(todays_word[i], wordle_guess[i])
         # If the letter in todays_word matches the guess, add to result list
         if todays_word[i] == wordle_guess[i]:
             result.append(todays_word[i])
@@ -85,53 +101,54 @@ def yellow_letter_check(word, green_letters, yellow_letters):
         return True
     return False
 
-def next_word(wordlist, green_letters, yellow_letters, guess_history):
+def next_word(wordlist, green_letters, yellow_letters, discard_pile, guess_history, method):
     next_guess = None
-    for word in generate_five_letter(wordlist, green_letters, guess_history):
+    wordlist_sorted = []
+    for word in generate_five_letter(wordlist, green_letters, yellow_letters, discard_pile, guess_history):
         # Compare current matched letters to generated list of five letter words
         if green_letter_check(word, green_letters):
             if yellow_letter_check(word, green_letters, yellow_letters):
-                print('✔️  ', word)
                 next_guess = word
             else:
-                print('🟨', word)  # If matched letters == guessed word BUT close letters not in guessed word
                 if next_guess == None:
                     next_guess = word
-        else:
-            print('❌ ', word)  # If matched letters != guessed word
-    return next_guess
-    
-    
-def play_wordle():
-    """ Main function in order to play Wordle"""
+        wordlist_sorted.append(next_guess)
 
+    if method == 'brown':
+        frequency = nltk.FreqDist([w.lower() for w in brown.words()])
+        wordlist_sorted = sorted(wordlist_sorted, key=lambda x: frequency[x.lower()], reverse=True)
+    return wordlist_sorted[0]
+    
+def play_wordle(starting_word=first_word(), wordle=todays_wordle().lower(), method='quick'):
     discard_pile, guess_history, close_history = [], [], []
 
-    # todays_word = todays_wordle().lower()
-    todays_word = 'snoop'
+    todays_word = wordle
+    guess = starting_word
     wordlist = download_wordlist()
+    print(f"\nTodays wordle is:  {todays_word}\nYour guess is:\t   {guess}\n")
 
-    print(f"\nTodays wordle is:  {todays_word}\nYour guess is:\t   {first_word()}\n{'='*9}")
 
-    result, close_letters, wrong_letters, wordle_guess = compare_words(todays_word, first_word())
-    print(close_letters, wrong_letters)
-    discard_pile.extend(wrong_letters)      # List of letters that are not in today's Wordle
-    close_history.extend(close_letters)     # List of letters in today's Wordle that are out of order
-    guess_history.append(wordle_guess)      # List of guess attempt at today's Wordle
+    for i in range(6):
+        print(f"{'='*9}\n")
+        result, close_letters, wrong_letters, wordle_guess = compare_words(todays_word, guess)
+        discard_pile.extend(wrong_letters)      # List of letters that are not in today's Wordle
+        close_history.extend(close_letters)     # List of letters in today's Wordle that are out of order
+        guess_history.append(wordle_guess)      # List of guess attempt at today's Wordle
 
-    if result == [char for char in todays_word]:
-        return print('WORDLE')
+        close_history = [*set(close_history)]   # Remove dupllicates from close_history
 
-    # The word is: SPOON
-    # First guess: SPORT 🟩🟩🟩⬜⬜
-    # Secnd guess: SPOOF 🟩🟩🟩🟩⬜
+        if result == [char for char in todays_word]:
+            return print(f'WORDLE: {guess_history[-1][0]}\nIt took {len(guess_history)} guesses')
+        
+        guess = next_word(wordlist, result, close_history, discard_pile, guess_history, method)
 
-    print(f"""{'='*9}
-The next guess should be:  {next_word(wordlist, result, close_history, guess_history)}
-Current board:  {result}
-Yellow letters: {close_history}
-Discard pile:   {discard_pile}
-Guess history:  {guess_history}
-""")
+        print(f"""{'-'*2}    
+    The next guess will be:  {guess}
+    Current board:  {result}
+    Yellow letters: {close_history}
+    Discard pile:   {discard_pile}
+    Guess history:  {guess_history}""")
 
-play_wordle()
+    return print('\nnice */6, wordle scum') 
+
+play_wordle(wordle='apple', method='brown')
