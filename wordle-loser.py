@@ -1,30 +1,43 @@
-import requests
+"""Solve the daily Wordle"""
 import random
+from nltk.corpus import brown
+import requests
 import nltk
 from config import API_KEY
-from nltk.corpus import brown
 
 
 def todays_wordle():
     """Send GET request to get the Wordle of the day"""
-
-    url = "https://wordle-answers-solutions.p.rapidapi.com/today"
-
+    url = "https://wordle-answers-solutions.p.rapidapi.com/answers"
     headers = {
         "X-RapidAPI-Key": API_KEY,
         "X-RapidAPI-Host": "wordle-answers-solutions.p.rapidapi.com"
     }
 
     response = requests.request("GET", url, headers=headers)
-    return response.json().get('today')
+    return response.json().get('data')[0]
 
 def download_wordlist():
+    """Download some NLTK things that could be used """
     nltk.download('words')
     nltk.download('brown')
     return nltk.corpus.words.words()
 
+def sort_textfile(subdir='wordlists/',
+                  infile='valid-wordle-words.txt',
+                  outfile='sorted-valid-wordle-words.txt'):
+    """Standalone function that sorts a textfile by most common words (Brown Corpus)"""
+    with open(subdir + infile, "r", encoding="utf-8") as my_infile:
+        data_list = my_infile.read().split("\n")
+    frequency = nltk.FreqDist([w.lower() for w in brown.words()])
+    wordlist_sorted = sorted(data_list, key=lambda x: frequency[x.lower()], reverse=True)
+    with open(subdir + outfile, "w", encoding="utf-8") as my_outfile:
+        for word in wordlist_sorted:
+            my_outfile.write(word + "\n")
+
 def first_word():
-    wordlist = ['adieu', 'media', 'arise', 'radio']
+    """Select the first word to play"""
+    wordlist = ['adieu', 'media', 'crane', 'radio']
     return random.choice(wordlist)
 
 def generate_five_letter(wordlist, green_letters, yellow_letters, discard_pile, guess_history):
@@ -50,7 +63,7 @@ def generate_five_letter(wordlist, green_letters, yellow_letters, discard_pile, 
                 five_letter_words.remove(word)
                 break
             # Remove words that have incorrect letters in previously solved positions
-            if letter != green_letters[j] and green_letters[j] != None:
+            if letter != green_letters[j] and green_letters[j] is not None:
                 five_letter_words.remove(word)
                 break
     for word in five_letter_words.copy():
@@ -63,7 +76,7 @@ def generate_five_letter(wordlist, green_letters, yellow_letters, discard_pile, 
     # print(f"Possible words remaining: {len(five_letter_words)}")
     return five_letter_words
 
-def compare_words(todays_word, wordle_guess):
+def compare_words(todays_word, wordle_guess, close_history):
     """Compare a submitted word against the days Wordle"""
 
     emoji_output = ""
@@ -72,20 +85,22 @@ def compare_words(todays_word, wordle_guess):
 
     if len(wordle_guess) != 5:
         return print("Error: Your guess word must be 5 letters long")
-    
+
     if wordle_guess == todays_word:
         result = [char for char in todays_word]
-        emoji_output = f"🟩🟩🟩🟩🟩"
+        emoji_output = "🟩🟩🟩🟩🟩"
         return result, [], [], todays_word, emoji_output
 
     for i in range(5):
         # If the letter in todays_word matches the guess, add to result list
         if todays_word[i] == wordle_guess[i]:
             result.append(todays_word[i])
+            if todays_word[i] in close_history:
+                close_history.remove(todays_word[i])
             emoji_output = emoji_output + "🟩"
         # If the letter is anywhere within the guess, add to the close
         elif wordle_guess[i] in todays_word:
-            result.append(None)                     # None gets added if there is no exact match to keep position
+            result.append(None)  # None gets added if there is no exact match to keep position
             close_letters.append(wordle_guess[i])
             emoji_output = emoji_output + "🟨"
         # If the letter is neither correct or misplaced, add to the discard pile
@@ -97,31 +112,38 @@ def compare_words(todays_word, wordle_guess):
     return result, close_letters, wrong_letters, wordle_guess, emoji_output
 
 def green_letter_check(word, green_letters):
+    """Filter the wordlist through the known green letters"""
     for i in range(len(word)):
         # Compare positions of random word with matched letters to find viable words
-        if word[i] != green_letters[i] and green_letters[i] != None:
+        if word[i] is not green_letters[i] and green_letters[i] is not None:
             return False
     return True
 
 def yellow_letter_check(word, green_letters, yellow_letters):
-    open_spots = [i for i, x in enumerate(green_letters) if x == None]  # Enumeration of unmatched letters
-    current_word = [char for char in word]                              # List of each letter in the word being tested
+    """Filter the wordlist through known yellow letters"""
+    # Enumeration of unmatched letters
+    open_spots = [i for i, x in enumerate(green_letters) if x is None]
+    # List of each letter in the word being tested
+    current_word = [char for char in word]
 
     if any(current_word[i] in yellow_letters for i in open_spots):
         return True
     return False
 
-def next_word(wordlist, green_letters, yellow_letters, discard_pile, guess_history, method):
+def next_word(wordlist, green_letters, yellow_letters,
+              discard_pile, guess_history, method):
+    """Choose the next best word"""
     next_guess = None
     wordlist_sorted = []
-    generated_wordlist = generate_five_letter(wordlist, green_letters, yellow_letters, discard_pile, guess_history)
+    generated_wordlist = generate_five_letter(wordlist, green_letters, yellow_letters,
+                                              discard_pile, guess_history)
     for word in generated_wordlist:
         # Compare current matched letters to generated list of five letter words
         if green_letter_check(word, green_letters):
             if yellow_letter_check(word, green_letters, yellow_letters):
                 next_guess = word
             else:
-                if next_guess == None:
+                if next_guess is None:
                     next_guess = word
         wordlist_sorted.append(next_guess)
 
@@ -129,21 +151,37 @@ def next_word(wordlist, green_letters, yellow_letters, discard_pile, guess_histo
         frequency = nltk.FreqDist([w.lower() for w in brown.words()])
         wordlist_sorted = sorted(wordlist_sorted, key=lambda x: frequency[x.lower()], reverse=True)
     return wordlist_sorted[0], generated_wordlist
-    
-def play_wordle(starting_word=first_word(), wordle=todays_wordle().lower(), method='quick', print_output=False):
+
+def play_wordle(
+        starting_word=first_word(),
+        custom_list=False,
+        wordle=todays_wordle()['answer'],
+        method='quick',
+        print_output=False):
+    """Solve the daily Wordle"""
+
     discard_pile, guess_history, close_history = [], [], []
 
-    todays_word = wordle
-    guess = starting_word.lower()
     wordlist = download_wordlist()
+    if custom_list:
+        with open(custom_list, "r", encoding="utf-8") as my_infile:
+            wordlist = my_infile.read().split("\n")
+
+    todays_word = wordle.lower()
+    wordle_num = todays_wordle()['num']
+    guess = starting_word.lower()
     emoji_block = ""
 
-    for i in range(6):
+    if print_output:
+        print(f"{'='*40}\n\nOpening guess: {guess}\n")
+
+    for i in range(20):
         # Compare the guess word with the wordle of the day
-        result, close_letters, wrong_letters, wordle_guess, emoji_output = compare_words(todays_word, guess)
-        discard_pile.extend(wrong_letters)      # List of letters that are not in today's Wordle
-        close_history.extend(close_letters)     # List of letters in today's Wordle that are out of order
-        guess_history.append(wordle_guess)      # List of guess attempt at today's Wordle
+        (result, close_letters, wrong_letters,
+         wordle_guess, emoji_output) = compare_words(todays_word, guess, close_history)
+        discard_pile.extend(wrong_letters)      # List of letters that are not in the Wordle
+        close_history.extend(close_letters)     # List of letters in the Wordle out of order
+        guess_history.append(wordle_guess)      # List of guess attempt at the Wordle
 
         close_history = [*set(close_history)]   # Remove dupllicates from close_history
 
@@ -151,29 +189,31 @@ def play_wordle(starting_word=first_word(), wordle=todays_wordle().lower(), meth
 
         if result == [char for char in todays_word]:
             if print_output:
-                print(f"{emoji_block}")
-                print(f'WORDLE: {guess_history[-1]}\n'
-                    f'It took {len(guess_history)} guesses\n'
-                    f'Path: {" > ".join(guess_history)}\n')
+                print(f"{'='*40}\n\nWORDLE {wordle_num} {i+1}/6* "
+                      f"{guess_history[-1].upper()}{emoji_block}\n"
+                      f"Path: {' > '.join(guess_history)}\n")
             break
-        
+
         # Update the guess word based on previous results and remamining words
-        guess, wordlist = next_word(wordlist, result, close_history, discard_pile, guess_history, method)
+        guess, wordlist = next_word(wordlist, result, close_history,
+                                    discard_pile, guess_history, method)
         if print_output:
-            print(f"Next guess:   {guess}\n"
+            print(f"{'='*40}\n"
+                f"Next guess:     {guess}\n"
                 f"Current board:  {result}\n"
                 f"Yellow letters: {close_history}\n"
                 f"Discard pile:   {discard_pile}\n"
                 f"Guess history:  {guess_history}\n"
-                f"{emoji_block}\n{'='*40}")
+                f"{emoji_block}\n")
 
     wordle_dictionary = {
         "wordle": wordle,
+        "wordle_num": wordle_num,
         "emoji_block": emoji_block,
         "guess_history": guess_history,
-        "guess_count": len(guess_history),
+        "guess_count": i+1,
         "guess_path": " > ".join(guess_history),
     }
     return wordle_dictionary
 
-play_wordle(method='brown', print_output=True)
+play_wordle(custom_list='wordlists/sorted-valid-wordle-words.txt', print_output=True)
