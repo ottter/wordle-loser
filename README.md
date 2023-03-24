@@ -6,6 +6,8 @@ Unintelligent Wordle solving AI that is designed to be plugged in to a Discord c
 
 `play_wordle(starting_word='crane', custom_list='wordlists/sorted-valid-wordle-words.txt', print_output=True)`
 
+Accepted arguments for `play_wordle()`:
+
 ```txt
 Argument      | Default                  | Action
 starting_word=| first_word()             | Add any chosen 5 letter word as string
@@ -16,7 +18,7 @@ print_output= | False                    | Print output to the console
 ```
 
 ```py
-# Output from running play_wordle()
+# Returned values from running play_wordle()
 wordle_dictionary = {
     "wordle": wordle,               # (str) Wordle used being word
     "wordle_num": wordle_num,       # (int) Which Wordle number it is
@@ -96,5 +98,6 @@ Some improved sorting by word popularity can still be done, unless `grouf` reall
 ## Sources
 
 - [RapidAPI used to gather daily Wordle info](https://rapidapi.com/Alejandro99aru/api/wordle-answers-solutions/)
-- [Wordle wordlist](https://gist.github.com/dracos/dd0668f281e685bad51479e5acaadb93)
+- [List of valid Wordle words](https://gist.github.com/dracos/dd0668f281e685bad51479e5acaadb93)
 - [More on language processing, NLTK, and sorting words](https://www.nltk.org/book_1ed/ch05.html)
+- [Brown Corpus](https://en.wikipedia.org/wiki/Brown_Corpus)

@@ -95,9 +95,6 @@ def compare_words(todays_word, wordle_guess, close_history):
     emoji_output = ""
     result, wrong_letters, close_letters = [], [], []
 
-    if len(wordle_guess) != 5:
-        return print("Error: Your guess word must be 5 letters long")
-
     if wordle_guess == todays_word:
         result = [char for char in todays_word]
         emoji_output = "🟩🟩🟩🟩🟩"
@@ -185,6 +182,10 @@ def play_wordle(
     wordle_num = todays_wordle()['num']
     guess = starting_word.lower()
     emoji_block = ""
+
+    # Since starting and goal word can be custom, they need to be validated
+    if guess not in wordlist or todays_word not in wordlist:
+        return print(f'Error: Invalid word choice')
 
     if print_output:
         print(f"{'='*40}\n\nOpening guess: {guess}\n")
