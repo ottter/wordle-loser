@@ -213,7 +213,8 @@ def play_wordle(
         "guess_history": guess_history,
         "guess_count": i+1,
         "guess_path": " > ".join(guess_history),
+        "discard_pile": discard_pile
     }
     return wordle_dictionary
 
-play_wordle(custom_list='wordlists/sorted-valid-wordle-words.txt', print_output=True)
+play_wordle(custom_list='wordlists/sorted-valid-wordle-words.txt')
