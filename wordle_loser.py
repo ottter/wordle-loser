@@ -23,32 +23,6 @@ def download_wordlist():
     nltk.download('brown')
     return nltk.corpus.words.words()
 
-def sort_plurals(word):
-    """Option within sort_textfile to have plural words looked at last"""
-    print(word)
-    if word[-1] == 's':
-        return True
-    else:
-        return False
-
-def sort_textfile(subdir='wordlists/',
-                  infile='valid-wordle-words.txt',
-                  outfile='sorted-valid-wordle-words.txt',
-                  plurals=False):
-    """Standalone function that sorts a textfile by most common words (Brown Corpus)"""
-    # Open and read the original text file
-    with open(subdir + infile, "r", encoding="utf-8") as my_infile:
-        data_list = my_infile.read().split("\n")
-    # Sort the file based on usage
-    frequency = nltk.FreqDist([w.lower() for w in brown.words()])
-    wordlist_sorted = sorted(data_list, key=lambda x: frequency[x.lower()], reverse=True)
-    if plurals:
-        wordlist_sorted = sorted(wordlist_sorted, key=sort_plurals)
-    # Write sorted list to new text file
-    with open(subdir + outfile, "w", encoding="utf-8") as my_outfile:
-        for word in wordlist_sorted:
-            my_outfile.write(word + "\n")
-
 def first_word():
     """Select the first word to play"""
     wordlist = ['adieu', 'media', 'crane', 'radio']
@@ -232,5 +206,5 @@ def play_wordle(
     }
     return wordle_dictionary
 
-play_wordle(custom_list='wordlists/sorted-valid-wordle-words.txt', print_output=True)
-# sort_textfile(plurals=True)
+w = play_wordle(custom_list='wordlists/sorted-valid-wordle-words.txt', print_output=True)
+print(w)

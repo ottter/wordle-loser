@@ -34,16 +34,20 @@ wordle_dictionary = {
 
 Custom wordlists can also be used, if in a `\n` separated text file, like the contents of `./wordlists`. There
 are some methods of sorting these custom word lists by running `sort_textfile()`. This only needs to be ran once
-per wordlist and can be removed after.
+per wordlist and can be removed after. This has since been moved to it's own file, `wordlist_sort.py`.
 
-`sort_textfile(outfile='sorted-valid-wordle-words.txt', plurals=True)`
+`sort_textfile(outfile='sorted-valid-wordle-words.txt', filter_plurals=True, filter_repeats=True)`
+
+Since there are constantly new Wordles, the `wordles-so-far.txt` would have to be updated to keep it the most up
+to date. Words can be added in any order to that file, they just have to be lowercase and `\n` separated.
 
  ```txt
-Argument   | Default                        | Action
-subdir=    | 'wordlists/'                   | Directory path where wordlists are stored
-infile=    | 'valid-wordle-words.txt'       | Input filename (to be sorted)
-outfile=   | 'sorted-valid-wordle-words.txt'| Output filename
-plurals=   | False                          | Choose to put plural words at the end of list
+Argument        | Default                        | Action
+subdir=         | 'wordlists/'                   | Directory path where wordlists are stored
+infile=         | 'valid-wordle-words.txt'       | Input filename (to be sorted)
+outfile=        | 'sorted-valid-wordle-words.txt'| Output filename
+filter_plurals= | False                          | Choose to put plural words at the end of list
+filter_repeats= | False                          | Choose to put past wordles at the end of list
 ```
 
 ## Example Run
