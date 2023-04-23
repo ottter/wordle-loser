@@ -206,5 +206,6 @@ def play_wordle(
     }
     return wordle_dictionary
 
-w = play_wordle(custom_list='wordlists/sorted-valid-wordle-words.txt', print_output=True)
-print(w)
+w = play_wordle(custom_list='wordlists/sorted-valid-wordle-words.txt', print_output=False, starting_word='roate')
+for key, value in w.items():
+    print(key, value)

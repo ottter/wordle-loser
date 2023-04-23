@@ -318,6 +318,7 @@ jaunt
 joust
 judge
 karma
+kayak
 kebab
 khaki
 kiosk
@@ -623,6 +624,7 @@ unite
 unlit
 unmet
 untie
+unzip
 upset
 usage
 usher
