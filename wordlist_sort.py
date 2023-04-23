@@ -6,10 +6,11 @@ Sorting order of operations:
 1. Start with all valid Wordle words in alphabetical order
 2. Sort list by frequency in Brown Corpus. 
 3. (Optional) Send some quality words to the front
-4. (Optional) Send words with repeated letters to the end of the list
-5. (Optional) Send words ending in 'y' to end. Explained in sort_y_words function
-6. (Optional) Send plural words to end of list. These are rarely used
-7. (Optional) Send previous Wordles to end of list. These are not (rarely?) reused
+4. (Optional) Send words with uncommon letters to end of the list
+5. (Optional) Send words with repeated letters to the end of the list
+6. (Optional) Send words ending in 'y' to end. Explained in sort_y_words function
+7. (Optional) Send plural words to end of list. These are rarely used
+8. (Optional) Send previous Wordles to end of list. These are not (rarely?) reused
 """
 
 def sort_bestchoice(word):
@@ -42,9 +43,9 @@ def sort_repeats(word):
 def sort_uncommon(word):
     """
     Option to send words with uncommon letters to end of search list
-    Letters: J Q K Z
+    Letters: Q J X Z
     """
-    uncommon_letters = ['j', 'q', 'k', 'z']
+    uncommon_letters = ['q', 'j', 'x', 'z']
     for letter in uncommon_letters:
         if letter in word:
             return True         # Move to end of file

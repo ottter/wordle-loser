@@ -624,7 +624,6 @@ unite
 unlit
 unmet
 untie
-unzip
 upset
 usage
 usher
