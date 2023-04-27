@@ -133,7 +133,6 @@ def yellow_letter_check(word, green_letters, yellow_letters, guess_history):
 def next_word(wordlist, green_letters, yellow_letters,
               discard_pile, guess_history, method):
     """Choose the next best word from remaining wordlist"""
-    next_guess = None
     wordlist_sorted = []
     generated_wordlist = generate_five_letter(wordlist, green_letters, yellow_letters,
                                               discard_pile, guess_history)
@@ -143,10 +142,7 @@ def next_word(wordlist, green_letters, yellow_letters,
             # Returns true if it passes green_letter_check
             if yellow_letter_check(word, green_letters, yellow_letters, guess_history):
                 # Returns true if it passes yellow_letter_check
-                next_guess = word
-    if next_guess is None:
-        next_guess = generated_wordlist[0]
-    wordlist_sorted.append(next_guess)
+                wordlist_sorted.append(word)
 
     if method == 'brown':
         frequency = nltk.FreqDist([w.lower() for w in brown.words()])
@@ -224,4 +220,4 @@ def play_wordle(
 
 w = play_wordle(custom_list='wordlists/sorted-valid-wordle-words.txt', print_output=False, starting_word='stole')
 for key, value in w.items():
-    print(f"-> {key}:\n\t{value}")
+    print(f"-> {key}:\t{value}")
