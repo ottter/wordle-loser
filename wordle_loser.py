@@ -60,7 +60,7 @@ def generate_five_letter(wordlist, green_letters, yellow_letters, discard_pile, 
                 five_letter_words.remove(word)
                 break
     
-    print(f"Possible words remaining: {len(five_letter_words)}")
+    # print(f"Possible words remaining: {len(five_letter_words)}")
     return five_letter_words
 
 def compare_words(todays_word, wordle_guess, close_history):
@@ -136,6 +136,11 @@ def next_word(wordlist, green_letters, yellow_letters,
     wordlist_sorted = []
     generated_wordlist = generate_five_letter(wordlist, green_letters, yellow_letters,
                                               discard_pile, guess_history)
+
+    # Catch incase first guess has no green or yellow
+    if green_letters.count(None) == 5 and len(yellow_letters) == 0:
+        return generated_wordlist[0], generated_wordlist
+    
     for word in generated_wordlist:
         # Compare current matched letters to generated list of five letter words
         if green_letter_check(word, green_letters):
@@ -144,10 +149,14 @@ def next_word(wordlist, green_letters, yellow_letters,
                 # Returns true if it passes yellow_letter_check
                 wordlist_sorted.append(word)
 
-    if method == 'brown':
+    if method == 'brown' and len(guess_history) >= 4:
         frequency = nltk.FreqDist([w.lower() for w in brown.words()])
         wordlist_sorted = sorted(wordlist_sorted, key=lambda x: frequency[x.lower()], reverse=True)
-    return wordlist_sorted[0], generated_wordlist
+
+    try: 
+        return wordlist_sorted[0], generated_wordlist
+    except:
+        return word, generated_wordlist
 
 def play_wordle(
         starting_word=first_word(),
@@ -159,10 +168,11 @@ def play_wordle(
 
     discard_pile, guess_history, close_history = [], [], []
 
-    wordlist = download_wordlist()
     if custom_list:
         with open(custom_list, "r", encoding="utf-8") as my_infile:
             wordlist = my_infile.read().split("\n")
+    else:
+        wordlist = download_wordlist()
 
     todays_word = wordle.lower()
     wordle_num = todays_wordle()['num']
@@ -218,6 +228,31 @@ def play_wordle(
     }
     return wordle_dictionary
 
-w = play_wordle(custom_list='wordlists/sorted-valid-wordle-words.txt', print_output=False, starting_word='stole')
-for key, value in w.items():
-    print(f"-> {key}:\t{value}")
+def regular_play():
+    w = play_wordle(custom_list='wordlists/sorted-valid-wordle-words.txt', 
+                    print_output=False, 
+                    starting_word='stole')
+    for key, value in w.items():
+        print(f"-> {key}:\t{value}")
+
+def sample_bulk(method='quick'):
+    sample_pool = ['pilon', 'lotus', 'angry', 'chase', 'jumbo']
+    for word in sample_pool:
+        wrdl = play_wordle(custom_list='wordlists/sorted-valid-wordle-words.txt', 
+                           print_output=False, 
+                           starting_word='stole',
+                           wordle=word,
+                           method=method)
+        print(f"{wrdl['wordle']} in {wrdl['guess_count']} guesses. {wrdl['guess_path']}")
+
+def sample_single(wordle):
+    w = play_wordle(custom_list='wordlists/sorted-valid-wordle-words.txt', 
+                    print_output=False, 
+                    starting_word='stole',
+                    wordle=wordle)
+    for key, value in w.items():
+        print(f"-> {key}:\t{value}")
+
+# regular_play()
+# sample_single('angry')
+sample_bulk(method='brown')
