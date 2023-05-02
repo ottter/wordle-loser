@@ -130,6 +130,17 @@ def yellow_letter_check(word, green_letters, yellow_letters, guess_history):
 
     return is_valid_guess
 
+def unique_vowels(word):
+    """Would be nice to get all the vowels out early"""
+    vowels = ['a', 'e', 'i', 'o', 'u']
+    unique_vowels = set()
+    for letter in word:
+        if letter in vowels:
+            unique_vowels.add(letter)
+    if len(unique_vowels) >= 2:
+        return len(unique_vowels)
+    return 0
+
 def next_word(wordlist, green_letters, yellow_letters,
               discard_pile, guess_history, method):
     """Choose the next best word from remaining wordlist"""
@@ -138,25 +149,30 @@ def next_word(wordlist, green_letters, yellow_letters,
                                               discard_pile, guess_history)
 
     # Catch incase first guess has no green or yellow
-    if green_letters.count(None) == 5 and len(yellow_letters) == 0:
-        return generated_wordlist[0], generated_wordlist
+    # if green_letters.count(None) == 5 and len(yellow_letters) == 0:
+    #     return generated_wordlist[0], generated_wordlist
     
     for word in generated_wordlist:
         # Compare current matched letters to generated list of five letter words
-        if green_letter_check(word, green_letters):
-            # Returns true if it passes green_letter_check
-            if yellow_letter_check(word, green_letters, yellow_letters, guess_history):
-                # Returns true if it passes yellow_letter_check
-                wordlist_sorted.append(word)
+        if green_letter_check(word, green_letters) and yellow_letter_check(word, green_letters, yellow_letters, guess_history):
+            wordlist_sorted.append(word)
+    # print(wordlist_sorted, guess_history)
 
     if method == 'brown' and len(guess_history) >= 4:
         frequency = nltk.FreqDist([w.lower() for w in brown.words()])
         wordlist_sorted = sorted(wordlist_sorted, key=lambda x: frequency[x.lower()], reverse=True)
 
-    try: 
-        return wordlist_sorted[0], generated_wordlist
-    except:
-        return word, generated_wordlist
+    if not wordlist_sorted:
+        wordlist_sorted = generated_wordlist
+
+    # Check viable wordlist and return best rated word with multiple vowels, if possible
+    unique_vowel_list = [word for word in wordlist_sorted if unique_vowels(word) > 1]
+    unique_vowel_list = sorted(wordlist_sorted, key=unique_vowels, reverse=True)
+    if unique_vowel_list:
+        wordlist_sorted = unique_vowel_list
+
+    # Otherwise return next best viable word
+    return wordlist_sorted[0], generated_wordlist
 
 def play_wordle(
         starting_word=first_word(),
@@ -236,14 +252,14 @@ def regular_play():
         print(f"-> {key}:\t{value}")
 
 def sample_bulk(method='quick'):
-    sample_pool = ['pilon', 'lotus', 'angry', 'chase', 'jumbo']
+    sample_pool = ['pilon', 'lotus', 'angry', 'chase', 'jumbo', 'range', 'whale']
     for word in sample_pool:
         wrdl = play_wordle(custom_list='wordlists/sorted-valid-wordle-words.txt', 
                            print_output=False, 
                            starting_word='stole',
                            wordle=word,
                            method=method)
-        print(f"{wrdl['wordle']} in {wrdl['guess_count']} guesses. {wrdl['guess_path']}")
+        print(f"{wrdl['wordle']} in {wrdl['guess_count']} guesses ({method}). {wrdl['guess_path']}")
 
 def sample_single(wordle):
     w = play_wordle(custom_list='wordlists/sorted-valid-wordle-words.txt', 
@@ -255,4 +271,5 @@ def sample_single(wordle):
 
 # regular_play()
 # sample_single('angry')
-sample_bulk(method='brown')
+sample_bulk(method='quick')
+# sample_bulk(method='brown')

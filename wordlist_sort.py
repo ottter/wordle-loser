@@ -104,6 +104,9 @@ def sort_textfile(subdir='wordlists/',
     wordlist_sorted = sorted(wordlist_sorted, key=lambda x: frequency[x.lower()], reverse=True)
     print("-> Sorted all words by Brown Corpus frequency.")
 
+    # Order of below functions should be from:
+    # most likely at the TOP to least likely at the BOTTOM
+
     if filter_bestchoice:
         # If word is considered high quality due to letter dist, send to front
         # https://artofproblemsolving.com/blog/articles/the-math-of-winning-wordle
